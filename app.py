@@ -57,13 +57,11 @@ st.title("Bist Volatility App")
 col1, col2 = st.columns((1, 4))
 
 with col1:
-    tick = st.text_input("Hisse", "XU100")
-    if tick == "eurusd" or "EURUSD":
+    tick = st.text_input('hisse',"eurusd").upper()
+    if tick == "EURUSD":
         tick = "EURUSD=X"
-    if tick == "dxy" or "DXY":
-        tick = "DX-Y.NYB"
     else:
-        tick = tick.upper() + '.IS'
+        tick = tick + '.IS'
 
     intrv = st.selectbox(
         "Zaman Aralığı",
@@ -83,6 +81,7 @@ with col1:
     df = calc(tick, period, intrv, ma_w, sf_w)
 
 with col2:
+    st.write(f"Chart for {tick}")
     color_map = {
         'Close': 'yellow',
         'RH': 'green',
