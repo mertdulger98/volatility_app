@@ -58,7 +58,10 @@ col1, col2 = st.columns((1, 4))
 
 with col1:
     tick = st.text_input("Hisse", "XU100")
-    tick = tick.upper() + '.IS'
+    if tick == "eurusd" or "EURUSD":
+        tick = "EURUSD=X"
+    else:
+        tick = tick.upper() + '.IS'
 
     intrv = st.selectbox(
         "Zaman Aralığı",
