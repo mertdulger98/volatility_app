@@ -95,11 +95,14 @@ with col2:
         fig = px.scatter(df[-45:], x='Date', y=['Close', 'RH', 'RL'])
 
     if intrv != '1d':
-        fig.update_xaxes(
-            rangebreaks=[
-                dict(bounds=["sat", "mon"]),  # hide weekends
-                dict(bounds=[18, 9], pattern="hour")
-            ])
+        if tick != "EURUSD=X":
+            fig.update_xaxes(
+                rangebreaks=[
+                    dict(bounds=["sat", "mon"]),  # hide weekends
+                    dict(bounds=[18, 9], pattern="hour")
+                ])
+
+
 
     fig.update_layout(xaxis_showspikes=True,
                       hovermode='x'
