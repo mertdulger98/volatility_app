@@ -60,6 +60,8 @@ with col1:
     tick = st.text_input("Hisse", "XU100")
     if tick == "eurusd" or "EURUSD":
         tick = "EURUSD=X"
+    if tick == "dxy" or "DXY":
+        tick = "DX-Y.NYB"
     else:
         tick = tick.upper() + '.IS'
 
