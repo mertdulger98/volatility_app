@@ -35,7 +35,8 @@ def calc(tick, per, inter, mov, window):
 tfs = {
     '1d': '6mo',
     '1h': '60d',
-    '15m': '30d'
+    '15m': '30d',
+    '5m': '3d'
 }
 
 st.set_page_config(layout="wide",
@@ -57,7 +58,7 @@ st.title("Bist Volatility App")
 col1, col2 = st.columns((1, 4))
 
 with col1:
-    tick = st.text_input('hisse',"eurusd").upper()
+    tick = st.text_input('hisse', "eurusd").upper()
     if tick == "EURUSD":
         tick = "EURUSD=X"
     else:
@@ -65,18 +66,13 @@ with col1:
 
     intrv = st.selectbox(
         "Zaman Aralığı",
-        ('1d', '1h', '15m')
+        ('1d', '1h', '15m', '5m')
     )
 
     period = tfs[intrv]
 
     ma_w = st.number_input("Hareketli Ortalama", value=30)
     sf_w = st.number_input("Kaydırma Aralığı", value=3)
-
-    typ = st.radio(
-        "Grafik Tipi",
-        ['Line', 'Scatter']
-    )
 
     df = calc(tick, period, intrv, ma_w, sf_w)
 
@@ -87,12 +83,8 @@ with col2:
         'RH': 'green',
         'RL': 'red'
     }
-    if typ == 'Line':
-        fig = px.line(df[-60:], x='Date', y=['Close', 'RH', 'RL'], markers=True, color_discrete_map=color_map)
 
-
-    elif typ == 'Scatter':
-        fig = px.scatter(df[-45:], x='Date', y=['Close', 'RH', 'RL'])
+    fig = px.line(df[-90:], x='Date', y=['Close', 'RH', 'RL'], markers=True, color_discrete_map=color_map)
 
     if intrv != '1d':
         if tick != "EURUSD=X":
@@ -101,8 +93,6 @@ with col2:
                     dict(bounds=["sat", "mon"]),  # hide weekends
                     dict(bounds=[18, 9], pattern="hour")
                 ])
-
-
 
     fig.update_layout(xaxis_showspikes=True,
                       hovermode='x'
