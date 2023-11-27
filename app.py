@@ -93,6 +93,11 @@ with col2:
                     dict(bounds=["sat", "mon"]),  # hide weekends
                     dict(bounds=[18, 9], pattern="hour")
                 ])
+        elif tick == "EURUSD=X":
+            fig.update_xaxes(
+                rangebreaks=[
+                    dict(bounds=["sat", "mon"])  # hide weekends
+                ])
 
     fig.update_layout(xaxis_showspikes=True,
                       hovermode='x'
