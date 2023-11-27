@@ -61,6 +61,8 @@ with col1:
     tick = st.text_input('hisse', "eurusd").upper()
     if tick == "EURUSD":
         tick = "EURUSD=X"
+    elif tick == "GBPUSD":
+        tick = "GBPUSD=X"
     else:
         tick = tick + '.IS'
 
@@ -87,13 +89,13 @@ with col2:
     fig = px.line(df[-90:], x='Date', y=['Close', 'RH', 'RL'], markers=True, color_discrete_map=color_map)
 
     if intrv != '1d':
-        if tick != "EURUSD=X":
-            fig.update_xaxes(
-                rangebreaks=[
-                    dict(bounds=["sat", "mon"]),  # hide weekends
-                    dict(bounds=[18, 9], pattern="hour")
-                ])
-        elif tick == "EURUSD=X":
+        fig.update_xaxes(
+            rangebreaks=[
+                dict(bounds=["sat", "mon"]), # hide weekends
+                dict(bounds=[18, 9], pattern="hour")
+            ])
+
+        if tick == "EURUSD=X" or tick == "GBPUSD=X":
             fig.update_xaxes(
                 rangebreaks=[
                     dict(bounds=["sat", "mon"])  # hide weekends
