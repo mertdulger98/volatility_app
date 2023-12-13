@@ -63,6 +63,8 @@ with col1:
         tick = "EURUSD=X"
     elif tick == "GBPUSD":
         tick = "GBPUSD=X"
+    elif tick == "DXY":
+        tick = "DX=F"
     else:
         tick = tick + '.IS'
 
@@ -95,7 +97,7 @@ with col2:
                 dict(bounds=[18, 9], pattern="hour")
             ])
 
-        if tick == "EURUSD=X" or tick == "GBPUSD=X":
+        if tick == "EURUSD=X" or tick == "GBPUSD=X" or tick=='DX=F':
             fig.update_xaxes(
                 rangebreaks=[
                     dict(bounds=["sat", "mon"])  # hide weekends
@@ -107,3 +109,6 @@ with col2:
                       )
 
     st.plotly_chart(fig, use_container_width=True)
+
+
+    st.dataframe(df)
