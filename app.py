@@ -65,6 +65,12 @@ with col1:
         tick = "GBPUSD=X"
     elif tick == "DXY":
         tick = "DX=F"
+    elif tick == "BTC":
+        tick = "BTC-USD"
+    elif tick == "ETH":
+        tick = "ETH-USD"
+    elif tick == "AVAX":
+        tick = "AVAX-USD"
     else:
         tick = tick + '.IS'
 
@@ -79,7 +85,7 @@ with col1:
     sf_w = st.number_input("Kaydırma Aralığı", value=3)
 
     df = calc(tick, period, intrv, ma_w, sf_w)
-
+    # st.dataframe(df)
 with col2:
     st.write(f"Chart for {tick}")
     color_map = {
@@ -91,16 +97,20 @@ with col2:
     fig = px.line(df[-90:], x='Date', y=['Close', 'RH', 'RL'], markers=True, color_discrete_map=color_map)
 
     if intrv != '1d':
-        fig.update_xaxes(
-            rangebreaks=[
-                dict(bounds=["sat", "mon"]), # hide weekends
-                dict(bounds=[18, 9], pattern="hour")
-            ])
-
-        if tick == "EURUSD=X" or tick == "GBPUSD=X" or tick=='DX=F':
+        if tick == "EURUSD=X" or tick == "GBPUSD=X" or tick == "DX=F":
             fig.update_xaxes(
                 rangebreaks=[
                     dict(bounds=["sat", "mon"])  # hide weekends
+                ])
+        elif tick == "AVAX-USD" or tick == "ETH-USD" or tick == "BTC-USD":
+            fig.update_xaxes(
+                rangebreaks=[]  # reset/remove rangebreaks for these tickers
+            )
+        else :
+            fig.update_xaxes(
+                rangebreaks=[
+                    dict(bounds=["sat", "mon"]),  # hide weekends
+                    dict(bounds=[18, 9], pattern="hour")
                 ])
 
     fig.update_layout(xaxis_showspikes=True,
@@ -109,5 +119,3 @@ with col2:
                       )
 
     st.plotly_chart(fig, use_container_width=True)
-
-
