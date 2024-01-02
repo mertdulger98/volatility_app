@@ -9,6 +9,65 @@ today = datetime.datetime.today().strftime("%Y-%m-%d")
 import os
 import streamlit as st
 
+def bt(df,ma,shift):
+    df['volty'] = np.sqrt(df['Close'].rolling(ma).var())
+    df['Range'] = np.sqrt(ma / 365) * df['volty']
+    df['RH'] = (df['Close'] + df['Range']).shift(shift)
+    df['RL'] = (df['Close'] - df['Range']).shift(shift)
+
+    df['return_cum'] = 1.0
+    df['Signal'] = np.nan
+
+    current_position = None
+    df = df.reset_index()
+
+    ops = []
+    cls = []
+    sl = 0
+
+    for index, row in df.iterrows():
+        rh = row['RH']
+        rl = row['RL']
+        price = row['Close']
+        date = row['Date']
+        # mw = row['above_mw']
+
+        if (price > rh) and (current_position is None):
+            current_position = 'long'
+            ops.append([date, price, rh, rl])
+            sl = rl
+            tp = 2 * (price - sl)
+
+
+        elif (price < rh and current_position == 'long') or (price < sl and current_position == 'long'):
+            current_position = None
+            close_type = 'sl'
+            cls.append([date, price, close_type])
+
+    # df['Signal'] = df['Signal'].fillna(method='ffill')
+
+    pos = pd.concat([pd.DataFrame(ops, columns=['open_date', 'open_price', 'RH_open', 'RL_open']),
+                     pd.DataFrame(cls, columns=['close_date', 'close_price', 'type'])], axis=1)
+    pos['open_date'] = pd.to_datetime(pos['open_date'])
+    pos['close_date'] = pd.to_datetime(pos['close_date'])
+
+    size = 1500
+    pos['open_size'] = size / pos['open_price']
+    pos['pos_close_price'] = np.where(pos['close_price'] > pos['RL_open'], pos['close_price'], pos['RL_open'])
+    pos['return_nom'] = pos['pos_close_price'] - pos['open_price']
+    pos['return_perc'] = (pos['pos_close_price'] / pos['open_price']) - 1
+    pos['return_nom1'] = pos['close_price'] - pos['open_price']
+    pos['return_perc1'] = (pos['close_price'] / pos['open_price']) - 1
+    pos['cum_return'] = pos['return_perc'].cumsum()
+
+    pos['is_profit'] = np.where(pos['return_nom'] > 0, 'tp', 'sl')
+    pos['close_type'] = np.where(pos['close_price'] > pos['RL_open'], 'algo', 'stop')
+    pos['if_sl'] = np.where(pos['return_nom'] > -100, pos['return_nom'], -100)
+    pos['if_sl_pos'] = pos['if_sl'] * pos['open_size']
+    pos['sl_per'] = pos['if_sl'] / pos['open_price']
+
+    return pos
+
 
 def getData(stockName, period, interval):
     if interval == '1d':
@@ -21,6 +80,7 @@ def getData(stockName, period, interval):
     return df
 
 
+
 def calc(tick, per, inter, mov, window):
     df = getData(tick, per, inter)
     df['r_var'] = df['Close'].rolling(mov).var()
@@ -28,6 +88,17 @@ def calc(tick, per, inter, mov, window):
     df['Range'] = np.sqrt(mov / 365) * df['Volatility']
     df['RH'] = (df['Close'] + df['Range']).shift(window)
     df['RL'] = (df['Close'] - df['Range']).shift(window)
+
+    return df
+
+def calc1(tick, per, inter, mov, window):
+    df = getData(tick, per, inter)
+    # df['r_var'] = df['Close'].rolling(mov).var()
+    # df['Volatility'] = np.sqrt(df['r_var'])
+    # df['Range'] = np.sqrt(mov / 365) * df['Volatility']
+    # df['RH'] = (df['Close'] + df['Range']).shift(window)
+    # df['RL'] = (df['Close'] - df['Range']).shift(window)
+    df = bt(df,mov,window)
 
     return df
 
@@ -119,3 +190,8 @@ with col2:
                       )
 
     st.plotly_chart(fig, use_container_width=True)
+
+
+    pos = calc1(tick, period, intrv, ma_w, sf_w)
+    # st.dataframe(pos)
+    st.write(f"backest result = %{(pos['return_perc'].cumsum().iloc[-1])*100}")
