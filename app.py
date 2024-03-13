@@ -4,6 +4,8 @@ import yfinance as yf
 import math
 import datetime
 import plotly.express as px
+import plotly.graph_objects as go
+from pykalman import KalmanFilter
 
 today = datetime.datetime.today().strftime("%Y-%m-%d")
 import os
@@ -103,6 +105,25 @@ def calc1(tick, per, inter, mov, window):
     return df
 
 
+def kalman(tick,per,inter,sma):
+    df = getData(tick,per,inter)
+    df[f'sma_{sma}']=df['Close'].rolling(sma).mean()
+
+    x = df['Close']
+    kf = KalmanFilter(transition_matrices=[1],
+                      observation_matrices=[1],
+                      initial_state_mean=0,
+                      initial_state_covariance=1,
+                      observation_covariance=1,
+                      transition_covariance=.0001)
+
+    mean, cov = kf.filter(x.values)
+    mean = pd.Series(mean.flatten(), index=x.index)
+    df['kalman']=mean
+
+    return df
+
+
 tfs = {
     '1d': '6mo',
     '1h': '60d',
@@ -126,72 +147,107 @@ body {
 
 st.title("Bist Volatility App")
 
-col1, col2 = st.columns((1, 4))
 
-with col1:
-    tick = st.text_input('hisse', "eurusd").upper()
-    if tick == "EURUSD":
-        tick = "EURUSD=X"
-    elif tick == "GBPUSD":
-        tick = "GBPUSD=X"
-    elif tick == "DXY":
-        tick = "DX=F"
-    elif tick == "BTC":
-        tick = "BTC-USD"
-    elif tick == "ETH":
-        tick = "ETH-USD"
-    elif tick == "AVAX":
-        tick = "AVAX-USD"
-    else:
-        tick = tick + '.IS'
+with st.container():
+    col1, col2 = st.columns((1, 4))
 
-    intrv = st.selectbox(
-        "Zaman Aralığı",
-        ('1d', '1h', '15m', '5m')
-    )
+    with col1:
+        tick = st.text_input('hisse', "eurusd").upper()
+        if tick == "EURUSD":
+            tick = "EURUSD=X"
+        elif tick == "GBPUSD":
+            tick = "GBPUSD=X"
+        elif tick == "DXY":
+            tick = "DX=F"
+        elif tick == "BTC":
+            tick = "BTC-USD"
+        elif tick == "ETH":
+            tick = "ETH-USD"
+        elif tick == "AVAX":
+            tick = "AVAX-USD"
+        else:
+            tick = tick + '.IS'
 
-    period = tfs[intrv]
+        intrv = st.selectbox(
+            "Zaman Aralığı",
+            ('1d', '1h', '15m', '5m')
+        )
 
-    ma_w = st.number_input("Hareketli Ortalama", value=30)
-    sf_w = st.number_input("Kaydırma Aralığı", value=3)
+        period = tfs[intrv]
 
-    df = calc(tick, period, intrv, ma_w, sf_w)
-    # st.dataframe(df)
-with col2:
-    st.write(f"Chart for {tick}")
-    color_map = {
-        'Close': 'yellow',
-        'RH': 'green',
-        'RL': 'red'
-    }
+        ma_w = st.number_input("Hareketli Ortalama", value=30)
+        sf_w = st.number_input("Kaydırma Aralığı", value=3)
 
-    fig = px.line(df[-90:], x='Date', y=['Close', 'RH', 'RL'], markers=True, color_discrete_map=color_map)
+        df = calc(tick, period, intrv, ma_w, sf_w)
+        # st.dataframe(df)
+    with col2:
+        st.write(f"Chart for {tick}")
+        color_map = {
+            'Close': 'yellow',
+            'RH': 'green',
+            'RL': 'red'
+        }
 
-    if intrv != '1d':
-        if tick == "EURUSD=X" or tick == "GBPUSD=X" or tick == "DX=F":
-            fig.update_xaxes(
-                rangebreaks=[
-                    dict(bounds=["sat", "mon"])  # hide weekends
-                ])
-        elif tick == "AVAX-USD" or tick == "ETH-USD" or tick == "BTC-USD":
-            fig.update_xaxes(
-                rangebreaks=[]  # reset/remove rangebreaks for these tickers
-            )
-        else :
-            fig.update_xaxes(
-                rangebreaks=[
-                    dict(bounds=["sat", "mon"]),  # hide weekends
-                    dict(bounds=[18, 9], pattern="hour")
-                ])
+        fig = px.line(df[-90:], x='Date', y=['Close', 'RH', 'RL'], markers=True, color_discrete_map=color_map)
 
-    fig.update_layout(xaxis_showspikes=True,
+        if intrv != '1d':
+            if tick == "EURUSD=X" or tick == "GBPUSD=X" or tick == "DX=F":
+                fig.update_xaxes(
+                    rangebreaks=[
+                        dict(bounds=["sat", "mon"])  # hide weekends
+                    ])
+            elif tick == "AVAX-USD" or tick == "ETH-USD" or tick == "BTC-USD":
+                fig.update_xaxes(
+                    rangebreaks=[]  # reset/remove rangebreaks for these tickers
+                )
+            else :
+                fig.update_xaxes(
+                    rangebreaks=[
+                        dict(bounds=["sat", "mon"]),  # hide weekends
+                        dict(bounds=[18, 9], pattern="hour")
+                    ])
+
+        fig.update_layout(xaxis_showspikes=True,
+                          hovermode='x'
+                          # 'x unified'
+                          )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+
+        pos = calc1(tick, period, intrv, ma_w, sf_w)
+        # st.dataframe(pos)
+        st.write(f"backest result = %{(pos['return_perc'].cumsum().iloc[-1])*100}")
+
+
+with st.container():
+    st.write(f"{tick}")
+    mvg_avg = st.number_input("Hareketli ortalama", value=30)
+    df=kalman(tick,period,intrv,mvg_avg)
+
+    df=df[mvg_avg:]
+
+    # Create a candlestick chart
+    # figx = go.Figure(data=[go.Candlestick(x=df['Date'],
+    #                                      open=df['Open'],
+    #                                      high=df['High'],
+    #                                      low=df['Low'],
+    #                                      close=df['Close'],
+    #                                      name='Candlestick')])
+
+    fig = go.Figure()
+
+    # Add SMA line to the chart
+    fig.add_trace(go.Scatter(x=df['Date'], y=df[f'sma_{mvg_avg}'], mode='lines', name=f'SMA_{mvg_avg}',line=dict(color='yellow')))
+    fig.add_trace(go.Scatter(x=df['Date'], y=df[f'kalman'], mode='lines', name='kalman', line=dict(color='red')))
+
+    # Update the layout
+    fig.update_layout(title='Stock Price Data with SMA',
+                      xaxis_title='Date',
+                      yaxis_title='Price',
+                      xaxis_rangeslider_visible=False,height=800,
+                      xaxis_showspikes=True,
                       hovermode='x'
-                      # 'x unified'
                       )
 
     st.plotly_chart(fig, use_container_width=True)
-
-
-    pos = calc1(tick, period, intrv, ma_w, sf_w)
-    # st.dataframe(pos)
-    st.write(f"backest result = %{(pos['return_perc'].cumsum().iloc[-1])*100}")
