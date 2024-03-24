@@ -152,7 +152,7 @@ with st.container():
     col1, col2 = st.columns((1, 4))
 
     with col1:
-        tick = st.text_input('hisse', "eurusd").upper()
+        tick = st.text_input('hisse', "BTC").upper()
         if tick == "EURUSD":
             tick = "EURUSD=X"
         elif tick == "GBPUSD":
@@ -228,14 +228,14 @@ with st.container():
     df=df[mvg_avg:]
 
     # Create a candlestick chart
-    # figx = go.Figure(data=[go.Candlestick(x=df['Date'],
-    #                                      open=df['Open'],
-    #                                      high=df['High'],
-    #                                      low=df['Low'],
-    #                                      close=df['Close'],
-    #                                      name='Candlestick')])
+    fig = go.Figure(data=[go.Candlestick(x=df['Date'],
+                                         open=df['Open'],
+                                         high=df['High'],
+                                         low=df['Low'],
+                                         close=df['Close'],
+                                         name='Candlestick')])
 
-    fig = go.Figure()
+    # fig = go.Figure()
 
     # Add SMA line to the chart
     fig.add_trace(go.Scatter(x=df['Date'], y=df[f'sma_{mvg_avg}'], mode='lines', name=f'SMA_{mvg_avg}',line=dict(color='yellow')))
