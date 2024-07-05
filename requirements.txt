@@ -4,5 +4,3 @@ numpy
 yfinance
 plotly
 matplotlib
-pykalman
-scipy
